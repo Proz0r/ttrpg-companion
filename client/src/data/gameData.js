@@ -1,17 +1,83 @@
 export const SUITS = {
-  CLUBS: 'clubs',
-  DIAMONDS: 'diamonds',
-  HEARTS: 'hearts',
-  SPADES: 'spades'
+  clubs: 'clubs',
+  diamonds: 'diamonds',
+  hearts: 'hearts',
+  spades: 'spades'
 };
 
 export const ARCHETYPES = {
+  // Clubs
+  WARRIOR: {
+    id: 'warrior',
+    name: 'Warrior',
+    suit: 'clubs',
+    faction: 'countrymen',
+    abilities: {
+      level1: 'Battle Cry',
+      level3: 'Sword Mastery',
+      level5: 'Warlord'
+    },
+    bonusSkills: {
+      generic: 'Combat',
+      suit: 'Weapon Mastery',
+      other: 'Battlefield Leadership'
+    }
+  },
+  KNIGHT: {
+    id: 'knight',
+    name: 'Knight',
+    suit: 'clubs',
+    faction: 'nobility',
+    abilities: {
+      level1: 'Shield Block',
+      level3: 'Chivalry',
+      level5: 'Knight Commander'
+    },
+    bonusSkills: {
+      generic: 'Defense',
+      suit: 'Shield Mastery',
+      other: 'Honor'
+    }
+  },
+  JUSTICAR: {
+    id: 'justicar',
+    name: 'Justicar',
+    suit: 'clubs',
+    faction: 'justice',
+    abilities: {
+      level1: 'Law and Order',
+      level3: 'Judgment',
+      level5: 'Righteous Fury'
+    },
+    bonusSkills: {
+      generic: 'Justice',
+      suit: 'Law Enforcement',
+      other: 'Integrity'
+    }
+  },
+  CHALLENGER: {
+    id: 'challenger',
+    name: 'Challenger',
+    suit: 'clubs',
+    faction: 'underground',
+    abilities: {
+      level1: 'Street Smarts',
+      level3: 'Rebellion',
+      level5: 'Underground Leader'
+    },
+    bonusSkills: {
+      generic: 'Rebellion',
+      suit: 'Street Fighting',
+      other: 'Subversion'
+    }
+  },
+
   // Diamonds
   MAGE: {
     id: 'mage',
     name: 'Mage',
-    suit: SUITS.DIAMONDS,
-    faction: 'Arcane Academy',
+    suit: 'diamonds',
+    faction: 'arcane academy',
     abilities: {
       level1: 'Arcane Bolt',
       level3: 'Mana Shield',
@@ -26,8 +92,8 @@ export const ARCHETYPES = {
   ENCHANTER: {
     id: 'enchanter',
     name: 'Enchanter',
-    suit: SUITS.DIAMONDS,
-    faction: 'Coven Circle',
+    suit: 'diamonds',
+    faction: 'coven circle',
     abilities: {
       level1: 'Enchanting',
       level3: 'Mystic Binding',
@@ -42,8 +108,8 @@ export const ARCHETYPES = {
   INHERITOR: {
     id: 'inheritor',
     name: 'Inheritor',
-    suit: SUITS.DIAMONDS,
-    faction: 'Monster Mash',
+    suit: 'diamonds',
+    faction: 'monster mash',
     abilities: {
       level1: 'Monster Power',
       level3: 'Inheritance',
@@ -58,8 +124,8 @@ export const ARCHETYPES = {
   MEDIUM: {
     id: 'medium',
     name: 'Medium',
-    suit: SUITS.DIAMONDS,
-    faction: 'Undead Haunt',
+    suit: 'diamonds',
+    faction: 'undead haunt',
     abilities: {
       level1: 'Spirit Contact',
       level3: 'Ghost Form',
@@ -76,8 +142,8 @@ export const ARCHETYPES = {
   PRIEST: {
     id: 'priest',
     name: 'Priest',
-    suit: SUITS.HEARTS,
-    faction: 'Heavens',
+    suit: 'hearts',
+    faction: 'heavens',
     abilities: {
       level1: 'Healing Touch',
       level3: 'Restoration',
@@ -92,8 +158,8 @@ export const ARCHETYPES = {
   OCCULTIST: {
     id: 'occultist',
     name: 'Occultist',
-    suit: SUITS.HEARTS,
-    faction: 'Outer Worlds',
+    suit: 'hearts',
+    faction: 'outer worlds',
     abilities: {
       level1: 'Mystic Knowledge',
       level3: 'Otherworldly Power',
@@ -108,8 +174,8 @@ export const ARCHETYPES = {
   DEMONIST: {
     id: 'demonist',
     name: 'Demonist',
-    suit: SUITS.HEARTS,
-    faction: 'Hells',
+    suit: 'hearts',
+    faction: 'hells',
     abilities: {
       level1: 'Dark Magic',
       level3: 'Demonic Pact',
@@ -124,8 +190,8 @@ export const ARCHETYPES = {
   BARD: {
     id: 'bard',
     name: 'Bard',
-    suit: SUITS.HEARTS,
-    faction: 'Twilight Realms',
+    suit: 'hearts',
+    faction: 'twilight realms',
     abilities: {
       level1: 'Performance',
       level3: 'Inspiration',
@@ -142,7 +208,7 @@ export const ARCHETYPES = {
   SHIFTER: {
     id: 'shifter',
     name: 'Shifter',
-    suit: SUITS.SPADES,
+    suit: 'spades',
     faction: 'Beasts',
     abilities: {
       level1: 'Beast Form',
@@ -158,7 +224,7 @@ export const ARCHETYPES = {
   ROGUE: {
     id: 'rogue',
     name: 'Rogue',
-    suit: SUITS.SPADES,
+    suit: 'spades',
     faction: 'Extractors',
     abilities: {
       level1: 'Stealth',
@@ -174,24 +240,24 @@ export const ARCHETYPES = {
   HUNTER: {
     id: 'hunter',
     name: 'Hunter',
-    suit: SUITS.SPADES,
-    faction: 'Hunters',
+    suit: 'spades',
+    faction: 'hunters',
     abilities: {
       level1: 'Hunting',
       level3: 'Tracking',
       level5: 'Master Hunter'
     },
     bonusSkills: {
-      generic: 'Hunting',
-      suit: 'Tracking',
+      generic: 'Tracking',
+      suit: 'Stealth',
       other: 'Survival'
     }
   },
   DRUID: {
     id: 'druid',
     name: 'Druid',
-    suit: SUITS.SPADES,
-    faction: 'Nature Spirits',
+    suit: 'spades',
+    faction: 'nature spirits',
     abilities: {
       level1: 'Nature Magic',
       level3: 'Animal Companion',
@@ -199,8 +265,40 @@ export const ARCHETYPES = {
     },
     bonusSkills: {
       generic: 'Nature Knowledge',
-      suit: 'Nature Magic',
-      other: 'Animal Handling'
+      suit: 'Plant Mastery',
+      other: 'Animal Empathy'
+    }
+  },
+  ROGUE: {
+    id: 'rogue',
+    name: 'Rogue',
+    suit: 'spades',
+    faction: 'extractors',
+    abilities: {
+      level1: 'Pickpocket',
+      level3: 'Lockpicking',
+      level5: 'Master Thief'
+    },
+    bonusSkills: {
+      generic: 'Stealth',
+      suit: 'Lockpicking',
+      other: 'Disguise'
+    }
+  },
+  SHIFTER: {
+    id: 'shifter',
+    name: 'Shifter',
+    suit: 'spades',
+    faction: 'beasts',
+    abilities: {
+      level1: 'Beast Form',
+      level3: 'Enhanced Senses',
+      level5: 'Master Shifter'
+    },
+    bonusSkills: {
+      generic: 'Animal Knowledge',
+      suit: 'Beast Mastery',
+      other: 'Survival'
     }
   }
 };
@@ -339,8 +437,14 @@ export const SKILL_POINTS_PER_ATTRIBUTE = 1;
 
 // Helper functions
 export const getAvailableArchetypes = (suitRoles) => {
+  // Convert suit roles to object format if it's an array
+  const suitRolesObj = Array.isArray(suitRoles) 
+    ? suitRoles.reduce((acc, suit) => ({ ...acc, [suit]: true }), {})
+    : suitRoles;
+
+  // Filter archetypes based on selected suits
   return Object.values(ARCHETYPES).filter(archetype => 
-    suitRoles.includes(archetype.suit)
+    suitRolesObj && Object.keys(suitRolesObj).includes(archetype.suit)
   );
 };
 
