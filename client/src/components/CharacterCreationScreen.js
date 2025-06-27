@@ -115,7 +115,7 @@ const CharacterCreationScreen = () => {
     const selectedSuit = event.target.value;
     setCharacterData(prev => ({
       ...prev,
-      suitRoles: [...prev.suitRoles, selectedSuit]
+      suitRoles: [...new Set([...prev.suitRoles, selectedSuit])]
     }));
   };
 
@@ -375,6 +375,7 @@ const CharacterCreationScreen = () => {
                 setCharacterData(prev => ({ ...prev, archetypes }))
               }
               suitRoles={characterData.suitRoles}
+              availableArchetypes={getAvailableArchetypes(characterData.suitRoles)}
             />
           </Box>
         );
