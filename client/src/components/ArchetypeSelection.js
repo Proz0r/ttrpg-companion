@@ -16,7 +16,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { ARCHETYPES, SUITS, getAvailableArchetypes } from '../data/gameData';
 import { useSocket } from '../context/SocketContext';
-import './ArchetypeSelection.css';
+// Removed CSS import since we're using Material-UI's styled components
 
 const ArchetypeCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
