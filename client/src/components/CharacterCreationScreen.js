@@ -57,7 +57,7 @@ const CharacterCreationScreen = () => {
       // Load existing character data if editing
       const fetchCharacter = async () => {
         try {
-          const response = await fetch(`http://localhost:3001/characters/${characterId}`);
+          const response = await fetch(`${process.env.REACT_APP_API_URL}/characters/${characterId}`);
           const data = await response.json();
           setCharacterData(data);
         } catch (error) {
@@ -84,7 +84,7 @@ const CharacterCreationScreen = () => {
     try {
       if (characterId) {
         // Update existing character
-        await fetch(`http://localhost:3001/characters/${characterId}`, {
+        await fetch(`${process.env.REACT_APP_API_URL}/characters/${characterId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -93,7 +93,7 @@ const CharacterCreationScreen = () => {
         });
       } else {
         // Create new character
-        const response = await fetch('http://localhost:3001/characters', {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/characters`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

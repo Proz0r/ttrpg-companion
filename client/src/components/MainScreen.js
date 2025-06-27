@@ -30,7 +30,7 @@ const MainScreen = () => {
     // Fetch characters from backend
     const fetchCharacters = async () => {
       try {
-        const response = await fetch('http://localhost:3001/characters');
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/characters`);
         const data = await response.json();
         setCharacters(data);
       } catch (error) {

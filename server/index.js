@@ -51,7 +51,7 @@ const server = app.listen(port, () => {
 
 const io = socketIo(server, {
     cors: {
-        origin: "http://localhost:3000",
+        origin: "*",  // Allow all origins for now
         methods: ["GET", "POST", "PUT", "DELETE"]
     }
 });

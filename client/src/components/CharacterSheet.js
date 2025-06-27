@@ -60,7 +60,7 @@ const CharacterSheet = () => {
   const [selectedAttribute, setSelectedAttribute] = useState(null);
 
   useEffect(() => {
-    const socket = io('http://localhost:3001');
+    const socket = io(process.env.REACT_APP_API_URL);
     socketRef.current = socket;
 
     socket.on('connect', () => {
@@ -96,7 +96,7 @@ const CharacterSheet = () => {
 
   const fetchCharacters = async () => {
     try {
-      const response = await fetch('http://localhost:3001/characters');
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/characters`);
       const data = await response.json();
       setCharacters(data);
     } catch (error) {
@@ -126,7 +126,7 @@ const CharacterSheet = () => {
     setSuccessMessage('');
 
     try {
-      const response = await fetch('http://localhost:3001/characters', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/characters`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -173,7 +173,7 @@ const CharacterSheet = () => {
     setSuccessMessage('');
 
     try {
-      const response = await fetch(`http://localhost:3001/characters/${selectedCharacter.id}/points`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/characters/${selectedCharacter.id}/points`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +208,7 @@ const CharacterSheet = () => {
 
   const handleDelete = async () => {
     try {
-      await fetch(`http://localhost:3001/characters/${selectedCharacter.id}`, {
+      await fetch(`${process.env.REACT_APP_API_URL}/characters/${selectedCharacter.id}`, {
         method: 'DELETE',
       });
       socketRef.current.emit('characterDeleted', selectedCharacter.id);
