@@ -1,0 +1,14 @@
+node_modules/
+.env
+.DS_Store
+*.log
+build/
+coverage/
+*.pem
+*.key
+*.crt
+*.pfx
+*.der
+*.cer
+*.jks
+*.p8

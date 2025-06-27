@@ -1,0 +1,23 @@
+{
+  "name": "ttrpg-companion",
+  "version": "1.0.0",
+  "description": "A card-based TTRPG companion app",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon",
+    "client": "cd client && npm start",
+    "dev:full": "concurrently \"npm run dev\" \"npm run client\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^37.0.0",
+    "nodemon": "^3.0.2"
+  }
+}
