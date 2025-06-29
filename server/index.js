@@ -30,7 +30,12 @@ app.use((err, req, res, next) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+    res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        port: port,
+        env: process.env.NODE_ENV || 'production'
+    });
 });
 
 // In-memory storage for characters
@@ -66,12 +71,37 @@ const Character = {
 console.log('Starting server on port:', port);
 
 // Initialize Socket.IO
-const server = app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-    console.log('Environment Variables:');
-    console.log('PORT:', port);
-    console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
-});
+try {
+    const server = app.listen(port, '0.0.0.0', () => {
+        console.log(`Server is running on port ${port}`);
+        console.log('Environment Variables:');
+        console.log('PORT:', port);
+        console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
+        console.log('Node version:', process.version);
+        console.log('Process environment:', process.env.NODE_ENV);
+    });
+
+    // Handle server errors
+    server.on('error', (error) => {
+        console.error('Server error:', error);
+        process.exit(1);
+    });
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (error) => {
+        console.error('Uncaught exception:', error);
+        process.exit(1);
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason, promise) => {
+        console.error('Unhandled rejection:', reason);
+        process.exit(1);
+    });
+} catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+}
 
 // Handle server errors
 server.on('error', (error) => {
