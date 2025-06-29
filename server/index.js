@@ -7,17 +7,17 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Serve static files from the build directory
-app.use(express.static(path.join(__dirname, 'build')));
+// Serve static files from the client directory
+app.use(express.static(path.join(__dirname, '../client')));
 
 // Add root route handler
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    res.sendFile(path.join(__dirname, '../client/public', 'index.html'));
 });
 
 // Add catch-all route for React Router
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    res.sendFile(path.join(__dirname, '../client/public', 'index.html'));
 });
 
 // Middleware
