@@ -7,34 +7,19 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Add CORS headers
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    next();
-});
+// Configure CORS to allow frontend
+const corsOptions = {
+    origin: 'https://ttrpg-companion-frontend.onrender.com',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+};
 
-// Serve static files from the build directory
-app.use(express.static(path.join(__dirname, '../client/build')));
+// Middleware
+app.use(cors(corsOptions));
+app.use(express.json());
 
-// Add root route handler
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
-});
-
-// Add catch-all route for React Router
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
-});
-
-// Handle preflight requests
-app.options('*', (req, res) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.status(200).end();
-});
+// Routes (keep existing routes but remove static file serving)
+// The frontend will handle its own static files
 
 // Middleware
 app.use(cors());
