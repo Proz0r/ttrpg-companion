@@ -18,9 +18,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Routes (keep existing routes but remove static file serving)
-// The frontend will handle its own static files
-
 // Middleware
 app.use(cors());
 app.use(express.json());

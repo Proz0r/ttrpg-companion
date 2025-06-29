@@ -6,12 +6,8 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "nodemon",
-    "client": "cd client && npm start",
-    "dev:full": "concurrently \"npm run dev\" \"npm run client\"",
-    "build": "cd client && npm install && npm run build",
-    "deploy": "npm run build && node server/index.js",
-    "frontend": "cd client && npm start",
-    "build:frontend": "cd client && npm run build"
+    "build": "npm install",
+    "deploy": "npm run build && node server/index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
