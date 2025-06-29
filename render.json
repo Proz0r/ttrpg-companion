@@ -1,0 +1,15 @@
+{
+  "name": "ttrpg-companion-backend",
+  "type": "node",
+  "buildCommand": "npm install",
+  "startCommand": "node server/index.js",
+  "env": {
+    "PORT": "3001"
+  },
+  "build": {
+    "docker": {
+      "context": ".",
+      "dockerfile": "Dockerfile"
+    }
+  }
+}
