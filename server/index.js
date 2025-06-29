@@ -72,6 +72,17 @@ console.log('Starting server on port:', port);
 
 // Initialize Socket.IO
 try {
+    // Set up error handlers first
+    process.on('uncaughtException', (error) => {
+        console.error('Uncaught exception:', error);
+        process.exit(1);
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+        console.error('Unhandled rejection:', reason);
+        process.exit(1);
+    });
+
     const server = app.listen(port, '0.0.0.0', () => {
         console.log(`Server is running on port ${port}`);
         console.log('Environment Variables:');
@@ -81,63 +92,47 @@ try {
         console.log('Process environment:', process.env.NODE_ENV);
     });
 
-    // Handle server errors
+    // Set up server error handler after server is created
     server.on('error', (error) => {
         console.error('Server error:', error);
         process.exit(1);
     });
 
-    // Handle uncaught exceptions
-    process.on('uncaughtException', (error) => {
-        console.error('Uncaught exception:', error);
-        process.exit(1);
+    // Initialize Socket.IO
+    const io = socketIo(server, {
+        cors: {
+            origin: process.env.FRONTEND_URL || 'https://ttrpg-companion-frontend.onrender.com',
+            methods: ['GET', 'POST']
+        }
     });
 
-    // Handle unhandled promise rejections
-    process.on('unhandledRejection', (reason, promise) => {
-        console.error('Unhandled rejection:', reason);
-        process.exit(1);
+    // Socket.IO event handlers
+    io.on('connection', (socket) => {
+        console.log('Client connected');
+        socket.on('disconnect', () => {
+            console.log('Client disconnected');
+        });
+
+        // Handle character creation event
+        socket.on('characterCreated', (character) => {
+            socket.broadcast.emit('characterCreated', character);
+        });
+
+        // Handle character update event
+        socket.on('characterUpdated', (character) => {
+            socket.broadcast.emit('characterUpdated', character);
+        });
+
+        // Handle character deletion event
+        socket.on('characterDeleted', (characterId) => {
+            socket.broadcast.emit('characterDeleted', characterId);
+        });
     });
+
 } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
 }
-
-// Handle server errors
-server.on('error', (error) => {
-    console.error('Server error:', error);
-});
-
-const io = socketIo(server, {
-    cors: {
-        origin: process.env.FRONTEND_URL || 'https://ttrpg-companion-frontend.onrender.com',
-        methods: ['GET', 'POST']
-    }
-});
-
-// Socket.IO handlers
-io.on('connection', (socket) => {
-    console.log('A user connected');
-    
-    // Handle character creation event
-    socket.on('characterCreated', (character) => {
-        socket.broadcast.emit('characterCreated', character);
-    });
-
-    // Handle character update event
-    socket.on('characterUpdated', (character) => {
-        socket.broadcast.emit('characterUpdated', character);
-    });
-
-    // Handle character deletion event
-    socket.on('characterDeleted', (characterId) => {
-        socket.broadcast.emit('characterDeleted', characterId);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected');
-    });
-});
 
 // Routes
 app.get('/api/characters', (req, res) => {
@@ -334,5 +329,23 @@ app.use((err, req, res, next) => {
     res.status(500).json({
         message: 'Something broke!',
         error: err.message
+    });
+});
+
+// Root route
+app.get('/', (req, res) => {
+    res.json({
+        status: 'success',
+        message: 'TTRPG Companion API is running',
+        endpoints: {
+            health: '/health',
+            characters: {
+                create: '/api/characters',
+                read: '/api/characters/:id',
+                update: '/api/characters/:id',
+                delete: '/api/characters/:id',
+                list: '/api/characters'
+            }
+        }
     });
 });
