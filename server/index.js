@@ -5,7 +5,7 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 8080;
 
 // Configure CORS
 const corsOptions = {
@@ -28,6 +28,11 @@ app.use((err, req, res, next) => {
     });
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
 // In-memory storage for characters
 let characters = [];
 let nextId = 1;
@@ -35,42 +40,48 @@ let nextId = 1;
 // Simple character model
 const Character = {
     create: (data) => {
-        const character = {
-            ...data,
-            id: nextId++,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        };
+        const character = { ...data, id: nextId++ };
         characters.push(character);
         return character;
     },
     findById: (id) => characters.find(c => c.id === parseInt(id)),
     updateById: (id, data) => {
-        const character = characters.find(c => c.id === parseInt(id));
-        if (!character) return null;
-        Object.assign(character, data);
-        character.updatedAt = new Date();
-        return character;
+        const index = characters.findIndex(c => c.id === parseInt(id));
+        if (index !== -1) {
+            characters[index] = { ...characters[index], ...data };
+            return characters[index];
+        }
+        return null;
     },
     deleteById: (id) => {
         const index = characters.findIndex(c => c.id === parseInt(id));
-        if (index === -1) return null;
-        return characters.splice(index, 1)[0];
+        if (index !== -1) {
+            return characters.splice(index, 1)[0];
+        }
+        return null;
     },
     findAll: () => [...characters]
 };
 
-console.log('Starting server...');
+console.log('Starting server on port:', port);
 
 // Initialize Socket.IO
 const server = app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    console.log(`Server is running on port ${port}`);
+    console.log('Environment Variables:');
+    console.log('PORT:', port);
+    console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+    console.error('Server error:', error);
 });
 
 const io = socketIo(server, {
     cors: {
-        origin: "*",  // Allow all origins for now
-        methods: ["GET", "POST", "PUT", "DELETE"]
+        origin: process.env.FRONTEND_URL || 'https://ttrpg-companion-frontend.onrender.com',
+        methods: ['GET', 'POST']
     }
 });
 

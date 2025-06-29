@@ -1,9 +1,20 @@
 FROM node:16-alpine
 
+# Set working directory
 WORKDIR /app
-COPY package*.json ./
+
+# Copy package files
+COPY package.json ./
+COPY package-lock.json ./
+
+# Install dependencies
 RUN npm install
+
+# Copy the rest of the application
 COPY . .
 
-EXPOSE 3001
-CMD ["node", "server/index.js"]
+# Expose the port the app runs on
+EXPOSE 8080
+
+# Start the application
+CMD ["npm", "start"]
