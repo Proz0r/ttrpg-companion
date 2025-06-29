@@ -7,20 +7,26 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Configure CORS to allow frontend
+// Configure CORS
 const corsOptions = {
-    origin: 'https://ttrpg-companion-frontend.onrender.com',
+    origin: process.env.FRONTEND_URL || 'https://ttrpg-companion-frontend.onrender.com',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 };
 
 // Middleware
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        message: 'Something broke!',
+        error: err.message
+    });
+});
 
 // In-memory storage for characters
 let characters = [];
