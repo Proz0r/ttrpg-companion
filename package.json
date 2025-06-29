@@ -7,7 +7,9 @@
     "start": "node server/index.js",
     "dev": "nodemon",
     "client": "cd client && npm start",
-    "dev:full": "concurrently \"npm run dev\" \"npm run client\""
+    "dev:full": "concurrently \"npm run dev\" \"npm run client\"",
+    "build": "cd client && npm install && npm run build",
+    "deploy": "npm run build && node server/index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
