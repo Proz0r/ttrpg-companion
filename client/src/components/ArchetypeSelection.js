@@ -16,7 +16,6 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { ARCHETYPES, SUITS, getAvailableArchetypes } from '../data/gameData';
 import { useSocket } from '../context/SocketContext';
-// Removed CSS import since we're using Material-UI's styled components
 
 const ArchetypeCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -42,34 +41,29 @@ const ArchetypeSelection = ({ selectedArchetypes = [], setSelectedArchetypes, su
 
   // Group archetypes by suit
   const archetypesBySuit = {};
-  console.log('Available archetypes:', availableArchetypes);
   if (availableArchetypes && availableArchetypes.length > 0) {
     availableArchetypes.forEach(archetype => {
       const suit = archetype.suit;
-      console.log('Processing archetype:', archetype);
       if (!archetypesBySuit[suit]) {
         archetypesBySuit[suit] = [];
       }
       archetypesBySuit[suit].push(archetype);
     });
-  } else {
-    console.log('No available archetypes to process');
   }
-  console.log('Archetypes by suit:', archetypesBySuit);
 
-  const handleArchetypeChange = (suit, archetype) => {
+  const handleArchetypeChange = (archetype) => {
     setSelectedArchetypes(prev => {
       const newArchetypes = [...prev];
-      const index = newArchetypes.findIndex(a => a === archetype.id);
+      const index = newArchetypes.indexOf(archetype.id);
       if (index !== -1) {
-        newArchetypes[index] = archetype.id;
+        newArchetypes.splice(index, 1);
       } else {
+        // Only allow one archetype per suit
+        newArchetypes = newArchetypes.filter(a => ARCHETYPES[a].suit !== archetype.suit);
         newArchetypes.push(archetype.id);
       }
       
-      // Send update to other players
-      socket.emit('archetypeSelected', { suit, archetypeId: archetype.id });
-      
+      socket.emit('archetypeSelected', { suit: archetype.suit, archetypeId: archetype.id });
       return newArchetypes;
     });
   };
@@ -81,19 +75,6 @@ const ArchetypeSelection = ({ selectedArchetypes = [], setSelectedArchetypes, su
     }));
   };
 
-  if (!availableArchetypes || availableArchetypes.length === 0) {
-    return (
-      <Box>
-        <Typography variant="h5" gutterBottom>
-          Select Your Archetypes
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          No archetypes available. Please select suit roles first.
-        </Typography>
-      </Box>
-    );
-  }
-
   return (
     <Box>
       <Typography variant="h5" gutterBottom>
@@ -101,64 +82,31 @@ const ArchetypeSelection = ({ selectedArchetypes = [], setSelectedArchetypes, su
       </Typography>
       
       {Object.entries(archetypesBySuit).map(([suit, archetypes]) => (
-        <Accordion
-          key={suit}
-          expanded={expandedSuits[suit]}
-          onChange={handleExpandChange(suit)}
-          sx={{ mb: 2 }}
-        >
+        <Accordion key={suit} expanded={expandedSuits[suit]} onChange={handleExpandChange(suit)}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
-              {suit.charAt(0).toUpperCase() + suit.slice(1)} Suit
-            </Typography>
+            <Typography>{SUITS[suit].charAt(0).toUpperCase() + SUITS[suit].slice(1)}</Typography>
           </AccordionSummary>
           <AccordionDetails>
             <Grid container spacing={2}>
-              {archetypes.map((archetype) => (
-                <Grid item xs={3} key={archetype.id}>
+              {archetypes.map(archetype => (
+                <Grid item xs={12} sm={6} key={archetype.id}>
                   <ArchetypeCard
                     className={selectedArchetypes.includes(archetype.id) ? 'archetype-card-selected' : ''}
+                    onClick={() => handleArchetypeChange(archetype)}
                   >
                     <CardContent>
                       <Typography variant="h6" gutterBottom>
                         {archetype.name}
                       </Typography>
-                      <Typography variant="body2" color="textSecondary">
+                      <Typography variant="body2" color="text.secondary">
                         {archetype.faction}
                       </Typography>
-                      <Box mt={2}>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Abilities:
-                        </Typography>
-                        <Box>
-                          <Typography variant="body2">
-                            Level 1: {archetype.abilities?.level1 || 'TBD'}<br />
-                            Level 3: {archetype.abilities?.level3 || 'TBD'}<br />
-                            Level 5: {archetype.abilities?.level5 || 'TBD'}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Box mt={2}>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Bonus Skills:
-                        </Typography>
-                        <Box>
-                          {Object.entries(archetype.bonusSkills).map(([type, skill]) => (
-                            <Typography key={type} variant="body2">
-                              {type}: {skill}
-                            </Typography>
-                          ))}
-                        </Box>
-                      </Box>
-                      <Box mt={2}>
-                        <Button
-                          variant={selectedArchetypes.includes(archetype.id) ? 'contained' : 'outlined'}
-                          fullWidth
-                          onClick={() => handleArchetypeChange(suit, archetype)}
-                        >
-                          {selectedArchetypes.includes(archetype.id) ? 'Selected' : 'Select'}
-                        </Button>
-                      </Box>
+                      <Typography variant="body2" color="text.secondary">
+                        {Object.values(archetype.abilities).join(', ')}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Bonus Skills: {Object.values(archetype.bonusSkills).join(', ')}
+                      </Typography>
                     </CardContent>
                   </ArchetypeCard>
                 </Grid>

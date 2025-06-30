@@ -5,23 +5,51 @@ import {
   Typography, 
   Button,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
+  Paper,
+  styled,
+  useTheme
 } from '@mui/material';
-import { SUITS, GENERIC_SKILLS, SUIT_SKILLS, SKILL_POINTS_PER_ATTRIBUTE } from '../data/gameData';
+import { 
+  SUITS, 
+  GENERIC_SKILLS, 
+  SUIT_SKILLS, 
+  SKILL_POINTS_PER_ATTRIBUTE, 
+  ARCHETYPES 
+} from '../data/gameData';
+
+const SkillCard = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: theme.shadows[8],
+  },
+  '&.skill-selected': {
+    backgroundColor: theme.palette.primary.light,
+    color: theme.palette.primary.contrastText,
+  },
+}));
 
 const SkillSelection = ({ character, onSkillSelect }) => {
   const [availablePoints, setAvailablePoints] = useState(0);
   const [selectedSkills, setSelectedSkills] = useState({});
+  const [suitPoints, setSuitPoints] = useState({});
+  const theme = useTheme();
 
   useEffect(() => {
-    // Calculate available skill points based on attribute points
-    let totalPoints = 0;
-    Object.entries(character.attributes).forEach(([suit, points]) => {
-      totalPoints += points * SKILL_POINTS_PER_ATTRIBUTE;
-    });
-    
-    // Add archetype bonus points
-    totalPoints += character.archetypes?.length * 3 || 0;
+    // Calculate points per suit
+    const suitPoints = {
+      clubs: character.attributes.clubs,
+      diamonds: character.attributes.diamonds,
+      hearts: character.attributes.hearts,
+      spades: character.attributes.spades,
+      archetype: character.archetypes.length * 3
+    };
+
+    // Calculate total points
+    const totalPoints = Object.values(suitPoints).reduce((sum, points) => sum + points, 0);
     
     // Calculate spent points
     let spentPoints = 0;
@@ -30,6 +58,7 @@ const SkillSelection = ({ character, onSkillSelect }) => {
     });
     
     setAvailablePoints(totalPoints - spentPoints);
+    setSuitPoints(suitPoints);
   }, [character, selectedSkills]);
 
   const handleSkillSelect = (skill, points) => {
@@ -40,88 +69,90 @@ const SkillSelection = ({ character, onSkillSelect }) => {
     onSkillSelect(selectedSkills);
   };
 
-  const getAvailableSkills = (suit) => {
-    return [...GENERIC_SKILLS, ...SUIT_SKILLS[suit]];
-  };
-
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Skill Points: {availablePoints}
-      </Typography>
-      
-      <Grid container spacing={2}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="h6">
+          Skill Selection
+        </Typography>
+        <Box display="flex" flexDirection="column" alignItems="flex-end">
+          <Typography variant="subtitle1" color="primary">
+            Points Remaining: {availablePoints}
+          </Typography>
+          <Box display="flex" flexWrap="wrap" gap={1} mt={1}>
+            {Object.entries(suitPoints).map(([suit, points]) => (
+              <Box key={suit} display="flex" alignItems="center">
+                <Typography variant="caption" mr={0.5}>
+                  {suit.charAt(0).toUpperCase() + suit.slice(1)}:
+                </Typography>
+                <Typography variant="caption" color="primary">
+                  {points}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+
+      <Grid container spacing={3}>
         {/* Generic Skills */}
         <Grid item xs={12}>
-          <Typography variant="subtitle1" gutterBottom>
+          <Typography variant="h6" gutterBottom>
             Generic Skills
           </Typography>
-          {GENERIC_SKILLS.map(skill => (
-            <FormControlLabel
-              key={skill}
-              control={
-                <Checkbox
-                  checked={selectedSkills[skill] > 0}
-                  onChange={(e) => handleSkillSelect(skill, e.target.checked ? 1 : 0)}
-                  disabled={availablePoints === 0}
-                />
-              }
-              label={`${skill} (${selectedSkills[skill] || 0})`}
-            />
-          ))}
+          <Grid container spacing={2}>
+            {GENERIC_SKILLS.map(skill => (
+              <Grid item xs={12} sm={6} md={4} key={skill}>
+                <SkillCard 
+                  className={selectedSkills[skill] ? 'skill-selected' : ''}
+                  onClick={() => handleSkillSelect(skill, selectedSkills[skill] ? 0 : 1)}
+                >
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body1">
+                      {skill}
+                    </Typography>
+                    <Typography variant="body1" color="primary">
+                      {selectedSkills[skill] || 0}
+                    </Typography>
+                  </Box>
+                </SkillCard>
+              </Grid>
+            ))}
+          </Grid>
         </Grid>
 
         {/* Suit-Specific Skills */}
-        {Object.entries(character.attributes).map(([suit, points]) => (
-          <Grid item xs={12} key={suit}>
-            <Typography variant="subtitle1" gutterBottom>
-              {suit.charAt(0).toUpperCase() + suit.slice(1)} Skills
-            </Typography>
-            {getAvailableSkills(suit).map(skill => (
-              <FormControlLabel
-                key={skill}
-                control={
-                  <Checkbox
-                    checked={selectedSkills[skill] > 0}
-                    onChange={(e) => handleSkillSelect(skill, e.target.checked ? 1 : 0)}
-                    disabled={availablePoints === 0}
-                  />
-                }
-                label={`${skill} (${selectedSkills[skill] || 0})`}
-              />
-            ))}
-          </Grid>
-        ))}
-      </Grid>
+        {Object.entries(character.attributes).map(([suit, points]) => {
+          if (points === 0) return null;
 
-      {/* Archetype Bonus Skills */}
-      {character.archetypes?.length > 0 && (
-        <Box mt={2}>
-          <Typography variant="subtitle1" gutterBottom>
-            Archetype Bonus Skills
-          </Typography>
-          {character.archetypes.map(archetype => (
-            <Box key={archetype.id}>
-              <Typography variant="subtitle2" gutterBottom>
-                {archetype.name}
+          return (
+            <Grid item xs={12} key={suit}>
+              <Typography variant="h6" gutterBottom>
+                {suit.charAt(0).toUpperCase() + suit.slice(1)} Skills
               </Typography>
-              {Object.entries(archetype.bonusSkills).map(([type, skill]) => (
-                <FormControlLabel
-                  key={type}
-                  control={
-                    <Checkbox
-                      checked={selectedSkills[skill] > 0}
-                      onChange={(e) => handleSkillSelect(skill, e.target.checked ? 1 : 0)}
-                      disabled={availablePoints === 0}
-                    />
-                  }
-                  label={`${skill} (${selectedSkills[skill] || 0})`}
-                />
-              ))}
-            </Box>
-          ))}
-        </Box>
-      )}
+              <Grid container spacing={2}>
+                {SUIT_SKILLS[suit]?.map(skill => (
+                  <Grid item xs={12} sm={6} md={4} key={skill}>
+                    <SkillCard 
+                      className={selectedSkills[skill] ? 'skill-selected' : ''}
+                      onClick={() => handleSkillSelect(skill, selectedSkills[skill] ? 0 : 1)}
+                    >
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body1">
+                          {skill}
+                        </Typography>
+                        <Typography variant="body1" color="primary">
+                          {selectedSkills[skill] || 0}
+                        </Typography>
+                      </Box>
+                    </SkillCard>
+                  </Grid>
+                ))}
+              </Grid>
+            </Grid>
+          );
+        })}
+      </Grid>
     </Box>
   );
 };

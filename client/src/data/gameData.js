@@ -403,28 +403,49 @@ export const FACTIONS = {
 };
 
 export const GENERIC_SKILLS = [
-  'Arcane Knowledge',
-  'Mystic Knowledge',
-  'Combat Training',
-  'Stealth',
-  'Survival',
-  // Add remaining generic skills
+  'Persuade',
+  'Deceive',
+  'Entertain',
+  'Coerce',
+  'Command',
+  'Trade',
+  'Demoralize',
+  'Request',
+  'Kin-Speak',
+  'Guarding',
+  'Trickery',
+  'History',
+  'Scan',
+  'Repair',
+  'Building',
+  'Forgery'
 ];
 
 export const SUIT_SKILLS = {
-  [SUITS.CLUBS]: [
-    'Spellcasting',
-    'Enchantment',
-    'Arcane Power',
-    'Mystic Binding'
+  clubs: [
+    'Craft Tools',
+    'Manual Handling',
+    'Taunt',
+    'Athletics'
   ],
-  [SUITS.DIAMONDS]: [
-    'Diplomacy',
-    'Leadership',
-    'Negotiation',
-    'Charisma'
+  hearts: [
+    'Sanctuary',
+    'Invoke',
+    'Housekeep',
+    'Craft Potion'
   ],
-  // Add skills for other suits
+  diamonds: [
+    'Craft Bomb',
+    'Craft Trinkets',
+    'Pathfinding',
+    'Veil'
+  ],
+  spades: [
+    'Break Object',
+    'Survival',
+    'Stealth',
+    'Stun'
+  ]
 };
 
 export const MAX_ATTRIBUTE_POINTS = {

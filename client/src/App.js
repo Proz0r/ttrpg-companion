@@ -9,8 +9,14 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <header className="App-header">
-          <h1>TTRPG Companion</h1>
+        <header className="App-header" style={{
+          padding: '10px',
+          marginBottom: '20px'
+        }}>
+          <h1 style={{
+            fontSize: '24px',
+            margin: 0
+          }}>TTRPG Companion</h1>
         </header>
         <main>
           <Routes>

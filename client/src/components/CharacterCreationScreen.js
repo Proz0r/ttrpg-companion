@@ -21,7 +21,7 @@ import ArchetypeSelection from './ArchetypeSelection';
 import SkillSelection from './SkillSelection';
 import { useSocket } from '../context/SocketContext';
 
-const steps = ['Suit Role', 'Attributes', 'Archetypes', 'Skills'];
+const steps = ['Suit Role & Attributes', 'Archetypes & Skills', 'Preview'];
 
 const CharacterCreationScreen = () => {
   const navigate = useNavigate();
@@ -37,9 +37,9 @@ const CharacterCreationScreen = () => {
       spades: 0,
     },
     archetypes: [],
-    skills: [],
+    skills: {},
     level: 1,
-    availablePoints: 4 // Start with 4 additional points
+    availablePoints: 4
   });
   const socket = useSocket();
 
@@ -68,7 +68,39 @@ const CharacterCreationScreen = () => {
     }
   }, [characterId]);
 
+  useEffect(() => {
+    if (!Array.isArray(characterData.archetypes)) {
+      setCharacterData(prev => ({
+        ...prev,
+        archetypes: []
+      }));
+    }
+  }, [characterData.archetypes]);
+
   const handleNext = () => {
+    if (activeStep === 0) {
+      // Validate suit roles and attributes
+      if (characterData.suitRoles.length === 0) {
+        alert('Please select at least one suit role');
+        return;
+      }
+      const totalPoints = calculateTotalPoints(characterData.level, characterData.suitRoles);
+      const currentPoints = calculateCurrentPoints(characterData.attributes);
+      if (currentPoints !== totalPoints) {
+        alert(`Please spend all ${totalPoints} points. You have ${totalPoints - currentPoints} points remaining.`);
+        return;
+      }
+    } else if (activeStep === 1) {
+      // Validate archetypes and skills
+      if (characterData.archetypes.length === 0) {
+        alert('Please select at least one archetype');
+        return;
+      }
+      if (Object.values(characterData.skills).some(skill => skill === 0)) {
+        alert('Please select all required skills');
+        return;
+      }
+    }
     setActiveStep((prevStep) => prevStep + 1);
   };
 
@@ -76,38 +108,20 @@ const CharacterCreationScreen = () => {
     setActiveStep((prevStep) => prevStep - 1);
   };
 
-  const handleCancel = () => {
-    navigate('/');
-  };
-
   const handleSave = async () => {
     try {
-      if (characterId) {
-        // Update existing character
-        await fetch(`${process.env.REACT_APP_API_URL}/characters/${characterId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(characterData),
-        });
-      } else {
-        // Create new character
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/characters`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...characterData,
-            level: 1 // Set initial level to 1 for new characters
-          }),
-        });
-        const data = await response.json();
-        navigate(`/sheet/${data.id}`);
-      }
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/characters${characterId ? `/${characterId}` : ''}`, {
+        method: characterId ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(characterData),
+      });
+      const data = await response.json();
+      navigate(`/sheet/${data.id}`);
     } catch (error) {
       console.error('Error saving character:', error);
+      alert('Failed to save character');
     }
   };
 
@@ -119,7 +133,6 @@ const CharacterCreationScreen = () => {
     }));
   };
 
-  // Automatically distribute points when moving to attributes step
   // Calculate total points based on level and number of suit roles
   const calculateTotalPoints = (level, suitRoles) => {
     if (!suitRoles || !suitRoles.length) return 0;
@@ -131,41 +144,20 @@ const CharacterCreationScreen = () => {
     return basePoints + additionalPoints;
   };
 
-  // Calculate additional points based on level
-  const calculateAdditionalPoints = (level) => {
-    // Start with 4 points at level 1, +2 per level
-    return 4 + (level-1)*2;
-  };
-
   // Calculate current total points from attributes
   const calculateCurrentPoints = (attributes) => {
     return Object.values(attributes).reduce((sum, value) => sum + value, 0);
   };
 
+  // Update available points when attributes change or level changes
   useEffect(() => {
-    if (activeStep === 1) {
-      // Initialize attributes with base points per suit role
-      const newAttributes = {
-        clubs: 0,
-        diamonds: 0,
-        hearts: 0,
-        spades: 0,
-      };
-
-      // Distribute base points to selected suit roles
-      const basePoints = 2;
-      characterData.suitRoles.forEach(suit => {
-        newAttributes[suit] = basePoints;
-      });
-
-      // Start with 4 additional points
-      setCharacterData(prev => ({
-        ...prev,
-        attributes: newAttributes,
-        availablePoints: 4 // Always start with 4 additional points
-      }));
-    }
-  }, [activeStep, characterData.suitRoles]);
+    const totalPoints = calculateTotalPoints(characterData.level, characterData.suitRoles);
+    const currentPoints = calculateCurrentPoints(characterData.attributes);
+    setCharacterData(prev => ({
+      ...prev,
+      availablePoints: totalPoints - currentPoints
+    }));
+  }, [characterData.attributes, characterData.level, characterData.suitRoles]);
 
   const handleLevelChange = (level) => {
     setCharacterData(prev => ({
@@ -197,26 +189,6 @@ const CharacterCreationScreen = () => {
     }));
   };
 
-  // Update available points when attributes change or level changes
-  useEffect(() => {
-    if (!characterData.suitRoles || !characterData.suitRoles.length) {
-      return;
-    }
-
-    const currentPoints = calculateCurrentPoints(characterData.attributes);
-    const basePoints = 2 * characterData.suitRoles.length;
-    // Get additional points based on current level
-    const additionalPoints = calculateAdditionalPoints(characterData.level);
-    
-    // Calculate spent points (subtract base points since they're automatic)
-    const spentPoints = currentPoints - basePoints;
-    
-    setCharacterData(prev => ({
-      ...prev,
-      availablePoints: Math.max(0, additionalPoints - spentPoints)
-    }));
-  }, [characterData.attributes, characterData.suitRoles, characterData.level]);
-
   const handleNameChange = (event) => {
     setCharacterData(prev => ({
       ...prev,
@@ -224,197 +196,173 @@ const CharacterCreationScreen = () => {
     }));
   };
 
-  const getStepContent = (step) => {
+  const handleArchetypeSelect = (archetypes) => {
+    setCharacterData(prev => ({
+      ...prev,
+      archetypes: Array.isArray(archetypes) ? archetypes : []
+    }));
+  };
+
+  const renderStepContent = (step) => {
     switch (step) {
       case 0:
         return (
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              Choose Suit Roles
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              Select {suitCountLabels[playerCount]} for your character
-            </Typography>
-            <Grid container spacing={2}>
-              {availableSuits.map(suit => (
-                <Grid item xs={12} sm={6} key={suit}>
-                  <Card>
-                    <CardContent>
-                      <FormControl fullWidth>
-                        <InputLabel>{suit.charAt(0).toUpperCase() + suit.slice(1)}</InputLabel>
-                        <Select
-                          value={characterData.suitRoles.includes(suit) ? suit : ''}
-                          onChange={handleSuitRoleChange}
-                          label={suit}
-                          disabled={characterData.suitRoles.length >= maxSuitRoles}
-                        >
-                          <MenuItem value={suit}>{suit.charAt(0).toUpperCase() + suit.slice(1)}</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Suit Roles
+                  </Typography>
+                  <FormControl fullWidth>
+                    <InputLabel>Suit Role</InputLabel>
+                    <Select
+                      value={characterData.suitRoles[0] || ''}
+                      onChange={handleSuitRoleChange}
+                      label="Suit Role"
+                    >
+                      {Object.entries(SUITS).map(([key, value]) => (
+                        <MenuItem key={key} value={key}>
+                          {value.charAt(0).toUpperCase() + value.slice(1)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </CardContent>
+              </Card>
             </Grid>
-            {characterData.suitRoles.length > 0 && (
-              <Box mt={2}>
-                <Typography variant="subtitle1">
-                  Selected Suit Roles: {characterData.suitRoles.join(', ')}
-                </Typography>
-              </Box>
-            )}
-          </Box>
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Attributes
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {Object.entries(SUITS).map(([suit, label]) => (
+                      <Grid item xs={12} key={suit}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Typography>{label.charAt(0).toUpperCase() + label.slice(1)}</Typography>
+                          <Box display="flex" alignItems="center">
+                            <Button
+                              onClick={() => handleAttributeChange(suit, characterData.attributes[suit] - 1)}
+                              disabled={characterData.attributes[suit] <= (characterData.suitRoles.includes(suit) ? 2 : 0)}
+                            >-</Button>
+                            <Typography mx={2}>{characterData.attributes[suit]}</Typography>
+                            <Button
+                              onClick={() => handleAttributeChange(suit, characterData.attributes[suit] + 1)}
+                              disabled={characterData.attributes[suit] >= 5 || characterData.availablePoints === 0}
+                            >+</Button>
+                          </Box>
+                        </Box>
+                      </Grid>
+                    ))}
+                    <Typography variant="subtitle2" color="textSecondary">
+                      Available Points: {characterData.availablePoints}
+                    </Typography>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
         );
       case 1:
         return (
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              Attributes
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Character Name"
-                  value={characterData.name}
-                  onChange={handleNameChange}
-                  sx={{ mb: 3 }}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <InputLabel>Character Level</InputLabel>
-                  <Select
-                    value={characterData.level}
-                    onChange={(e) => handleLevelChange(e.target.value)}
-                    label="Character Level"
-                  >
-                    <MenuItem value={1}>Level 1</MenuItem>
-                    <MenuItem value={2}>Level 2</MenuItem>
-                    <MenuItem value={3}>Level 3</MenuItem>
-                    <MenuItem value={4}>Level 4</MenuItem>
-                    <MenuItem value={5}>Level 5</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="body1" gutterBottom>
-                  Base points per suit role: 2 points
-                </Typography>
-                <Typography variant="body1" gutterBottom>
-                  Additional points to spend: {calculateAdditionalPoints(characterData.level)} points
-                </Typography>
-                <Typography variant="body1" gutterBottom>
-                  Total Points: {characterData.suitRoles && characterData.suitRoles.length 
-                    ? calculateTotalPoints(characterData.level, characterData.suitRoles) 
-                    : 0}
-                </Typography>
-                <Typography variant="body1" gutterBottom>
-                  Available Points: {characterData.availablePoints}
-                </Typography>
-                <Typography variant="body1" color="textSecondary" gutterBottom>
-                  Base Points Spent: {characterData.suitRoles && characterData.suitRoles.length 
-                    ? calculateCurrentPoints(characterData.attributes) - (2 * characterData.suitRoles.length)
-                    : 0}
-                </Typography>
-                <Typography variant="body1" color="textSecondary" gutterBottom>
-                  Maximum Points: {characterData.level === 1 ? 3 :
-                                 characterData.level === 2 ? 4 :
-                                 characterData.level === 3 ? 4 :
-                                 5}
-                </Typography>
-              </Grid>
-              {Object.entries(characterData.attributes).map(([attribute, value]) => (
-                <Grid item xs={12} sm={6} key={attribute}>
-                  <Card>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        {attribute.charAt(0).toUpperCase() + attribute.slice(1)}
-                      </Typography>
-                      <Typography variant="h4" gutterBottom>
-                        {value}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                          variant="contained"
-                          onClick={() => handleAttributeChange(attribute, value + 1)}
-                          disabled={
-                            value >= (characterData.level === 1 ? 3 :
-                                    characterData.level === 2 ? 4 :
-                                    characterData.level === 3 ? 4 :
-                                    5) ||
-                            calculateCurrentPoints(characterData.attributes) >= calculateTotalPoints(characterData.level, characterData.suitRoles)
-                          }
-                        >
-                          +1
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          onClick={() => handleAttributeChange(attribute, value - 1)}
-                          disabled={value <= (characterData.suitRoles.includes(attribute) ? 2 : 0)}
-                        >
-                          -1
-                        </Button>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h5" gutterBottom>
+                    Select Your Archetypes
+                  </Typography>
+                  <ArchetypeSelection
+                    selectedArchetypes={characterData.archetypes}
+                    setSelectedArchetypes={handleArchetypeSelect}
+                    suitRoles={characterData.suitRoles}
+                    availableArchetypes={getAvailableArchetypes(characterData.suitRoles)}
+                  />
+                </CardContent>
+              </Card>
             </Grid>
-          </Box>
+            <Grid item xs={12}>
+              <Card>
+                <CardContent>
+                  <SkillSelection
+                    character={characterData}
+                    onSkillSelect={(skills) => setCharacterData(prev => ({
+                      ...prev,
+                      skills
+                    }))}
+                  />
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
         );
       case 2:
         return (
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              Select Archetypes
-            </Typography>
-            <ArchetypeSelection
-              selectedArchetypes={characterData.archetypes}
-              setSelectedArchetypes={(archetypes) => 
-                setCharacterData(prev => ({ ...prev, archetypes }))
-              }
-              suitRoles={characterData.suitRoles}
-              availableArchetypes={getAvailableArchetypes(characterData.suitRoles)}
-            />
-          </Box>
-        );
-      case 3:
-        return (
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              Select Skills
-            </Typography>
-            <SkillSelection
-              selectedSkills={characterData.skills}
-              setSelectedSkills={(skills) => 
-                setCharacterData(prev => ({ ...prev, skills }))
-              }
-              suitRoles={characterData.suitRoles}
-            />
-          </Box>
+          <Card>
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                Character Preview
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <Typography>Name: {characterData.name}</Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography>Suit Role: {characterData.suitRoles.map(suit => SUITS[suit]).join(', ')}</Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography>Attributes:</Typography>
+                  <ul>
+                    {Object.entries(characterData.attributes).map(([suit, value]) => (
+                      <li key={suit}>{SUITS[suit]}: {value}</li>
+                    ))}
+                  </ul>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography>Archetypes:</Typography>
+                  <ul>
+                    {characterData.archetypes.map(archetype => (
+                      <li key={archetype}>{ARCHETYPES[archetype].name}</li>
+                    ))}
+                  </ul>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography>Skills:</Typography>
+                  <ul>
+                    {Object.entries(characterData.skills).map(([skill, points]) => (
+                      <li key={skill}>{skill}: {points}</li>
+                    ))}
+                  </ul>
+                </Grid>
+              </Grid>
+              <Box mt={2} display="flex" justifyContent="space-between">
+                <Button onClick={handleBack}>Back</Button>
+                <Button onClick={handleSave} variant="contained" color="primary">
+                  Save Character
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
         );
       default:
-        return 'Unknown step';
+        return null;
     }
   };
 
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom>
-        {characterId ? 'Edit Character' : 'Create Character'}
-      </Typography>
-      
-      <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+      <Stepper activeStep={activeStep}>
         {steps.map((label) => (
           <Step key={label}>
             <StepLabel>{label}</StepLabel>
           </Step>
         ))}
       </Stepper>
-
-      {getStepContent(activeStep)}
-
+      <Box mt={4}>
+        {renderStepContent(activeStep)}
+      </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
         <Button
           disabled={activeStep === 0}
@@ -427,7 +375,7 @@ const CharacterCreationScreen = () => {
             variant="contained"
             onClick={handleSave}
           >
-            {characterId ? 'Update' : 'Create'}
+            Save Character
           </Button>
         ) : (
           <Button
@@ -437,12 +385,6 @@ const CharacterCreationScreen = () => {
             Next
           </Button>
         )}
-        <Button
-          color="error"
-          onClick={handleCancel}
-        >
-          Cancel
-        </Button>
       </Box>
     </Box>
   );
