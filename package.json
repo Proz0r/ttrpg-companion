@@ -6,9 +6,10 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "nodemon server/index.js",
-    "build": "npm install",
+    "build": "npm ci",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "private": true,
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

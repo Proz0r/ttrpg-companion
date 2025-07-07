@@ -1,16 +1,23 @@
 {
   "name": "ttrpg-companion-backend",
   "type": "node",
-  "buildCommand": "npm install",
+  "buildCommand": "npm ci --production",
   "startCommand": "node server/index.js",
   "env": {
     "PORT": "8080",
-    "FRONTEND_URL": "https://ttrpg-companion-frontend.onrender.com"
+    "FRONTEND_URL": "https://ttrpg-companion-frontend.onrender.com",
+    "NODE_ENV": "production"
   },
   "build": {
     "docker": {
       "context": ".",
       "dockerfile": "Dockerfile"
     }
+  },
+  "healthCheck": {
+    "path": "/health",
+    "interval": 30,
+    "timeout": 5,
+    "threshold": 3
   }
 }

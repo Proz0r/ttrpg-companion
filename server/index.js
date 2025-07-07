@@ -2,7 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const socketIo = require('socket.io');
 const path = require('path');
-require('dotenv').config();
+
+// Load environment variables only in development
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -15,9 +19,28 @@ const corsOptions = {
     credentials: true
 };
 
+// Security headers
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+    next();
+});
+
 // Middleware
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Production error handling
+if (process.env.NODE_ENV === 'production') {
+    app.use((err, req, res, next) => {
+        console.error(err.stack);
+        res.status(500).json({
+            message: 'An error occurred. Please try again later.'
+        });
+    });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -321,6 +344,14 @@ app.put('/api/characters/:id/levelup', (req, res) => {
         console.error('Error in PUT /api/characters/:id/levelup:', error);
         res.status(400).json({ message: error.message });
     }
+});
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../client/build')));
+
+// Catch-all route to serve index.html for React Router
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
 });
 
 // Error handling middleware
