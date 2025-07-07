@@ -1,13 +1,31 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material';
 import './App.css';
 import MainScreen from './components/MainScreen';
 import CharacterCreationScreen from './components/CharacterCreationScreen';
 import CharacterSheet from './components/CharacterSheet';
+import CharacterSelect from './components/CharacterSelect';
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+      light: '#42a5f5',
+      dark: '#1565c0'
+    },
+    error: {
+      main: '#d32f2f',
+      light: '#ef5350',
+      dark: '#c62828'
+    }
+  }
+});
 
 function App() {
   return (
-    <Router>
+    <ThemeProvider theme={theme}>
+      <Router>
       <div className="App">
         <header className="App-header" style={{
           padding: '10px',
@@ -21,13 +39,15 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<MainScreen />} />
-            <Route path="/create/:playerCount" element={<CharacterCreationScreen />} />
-            <Route path="/edit/:characterId" element={<CharacterCreationScreen />} />
-            <Route path="/sheet/:characterId" element={<CharacterSheet />} />
+            <Route path="/create/:slot" element={<CharacterCreationScreen />} />
+            <Route path="/sheet/:slot" element={<CharacterSheet />} />
+            <Route path="/characters" element={<CharacterSelect />} />
+            <Route path="/edit/:slot" element={<CharacterCreationScreen />} />
           </Routes>
         </main>
       </div>
     </Router>
+    </ThemeProvider>
   );
 }
 

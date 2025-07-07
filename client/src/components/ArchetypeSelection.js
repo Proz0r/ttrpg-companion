@@ -1,133 +1,149 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Button,
   Card,
   CardContent,
   Typography,
+  Grid,
+  Chip,
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Grid,
+  Checkbox,
+  FormControlLabel,
+  Paper,
   styled,
   useTheme,
-  IconButton,
+  Button,
+  OutlinedInput,
+  CircularProgress,
+  Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { ARCHETYPES, SUITS, getAvailableArchetypes } from '../data/gameData';
-import { useSocket } from '../context/SocketContext';
+import {
+  ARCHETYPES,
+  SUITS,
+  GENERIC_SKILLS,
+  SUIT_SKILLS,
+  SKILL_POINTS_PER_ATTRIBUTE
+} from '../data/gameData';
 
-const ArchetypeCard = styled(Card)(({ theme }) => ({
+const SkillCard = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
   marginBottom: theme.spacing(2),
   transition: 'all 0.3s ease',
-  cursor: 'pointer',
   '&:hover': {
     transform: 'translateY(-2px)',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+    boxShadow: theme.shadows[8],
   },
-  '&.archetype-card-selected': {
-    border: '2px solid #2196f3',
-  },
+  '&.skill-selected': {
+    backgroundColor: theme.palette.primary.light,
+    color: theme.palette.primary.contrastText,
+  }
 }));
 
-const ArchetypeSelection = ({ selectedArchetypes = [], setSelectedArchetypes, suitRoles = [], availableArchetypes = [] }) => {
-  const [expandedSuits, setExpandedSuits] = useState({
-    clubs: false,
-    diamonds: false,
-    hearts: false,
-    spades: false,
-  });
-  const socket = useSocket();
+const ArchetypeSelection = ({ selectedArchetypes, setSelectedArchetypes, suitRolesSelected, characterData, onSkillChange }) => {
+  const [archetypeGroups, setArchetypeGroups] = useState({});
+  const [selectedSkills, setSelectedSkills] = useState({});
 
-  // Group archetypes by suit
-  const archetypesBySuit = {};
-  if (availableArchetypes && availableArchetypes.length > 0) {
-    availableArchetypes.forEach(archetype => {
+  useEffect(() => {
+    const groups = {};
+    Object.values(ARCHETYPES).forEach(archetype => {
       const suit = archetype.suit;
-      if (!archetypesBySuit[suit]) {
-        archetypesBySuit[suit] = [];
+      if (!groups[suit]) {
+        groups[suit] = [];
       }
-      archetypesBySuit[suit].push(archetype);
+      groups[suit].push(archetype);
     });
-  }
+    setArchetypeGroups(groups);
+  }, []);
 
-  const handleArchetypeChange = (archetype) => {
-    setSelectedArchetypes(prev => {
-      const newArchetypes = [...prev];
-      const index = newArchetypes.indexOf(archetype.id);
-      if (index !== -1) {
-        newArchetypes.splice(index, 1);
-      } else {
-        // Only allow one archetype per suit
-        newArchetypes = newArchetypes.filter(a => ARCHETYPES[a].suit !== archetype.suit);
-        newArchetypes.push(archetype.id);
-      }
-      
-      socket.emit('archetypeSelected', { suit: archetype.suit, archetypeId: archetype.id });
-      return newArchetypes;
-    });
+  useEffect(() => {
+    if (characterData?.skills) {
+      setSelectedSkills(characterData.skills);
+    }
+  }, [characterData]);
+
+  const handleArchetypeChange = (suit, value) => {
+    const newArchetypes = [...selectedArchetypes];
+    const index = newArchetypes.findIndex(a => a.suit === suit);
+    if (index > -1) {
+      newArchetypes[index] = value;
+    } else {
+      newArchetypes.push(value);
+    }
+    setSelectedArchetypes(newArchetypes);
   };
 
-  const handleExpandChange = (suit) => (event, isExpanded) => {
-    setExpandedSuits(prev => ({
-      ...prev,
-      [suit]: isExpanded,
-    }));
+  const handleSkillChange = (suit, skill, checked) => {
+    const newSelectedSkills = {
+      ...selectedSkills,
+      [suit]: {
+        ...(selectedSkills[suit] || {}),
+        [skill]: checked,
+      },
+    };
+    setSelectedSkills(newSelectedSkills);
+    if (onSkillChange) {
+      onSkillChange(newSelectedSkills);
+    }
   };
 
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>
-        Select Your Archetypes
-      </Typography>
-      
-      {Object.entries(archetypesBySuit).map(([suit, archetypes]) => (
-        <Accordion key={suit} expanded={expandedSuits[suit]} onChange={handleExpandChange(suit)}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography>{SUITS[suit].charAt(0).toUpperCase() + SUITS[suit].slice(1)}</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Grid container spacing={2}>
-              {archetypes.map(archetype => (
-                <Grid item xs={12} sm={6} key={archetype.id}>
-                  <ArchetypeCard
-                    className={selectedArchetypes.includes(archetype.id) ? 'archetype-card-selected' : ''}
-                    onClick={() => handleArchetypeChange(archetype)}
-                  >
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        {archetype.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {archetype.faction}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {Object.values(archetype.abilities).join(', ')}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Bonus Skills: {Object.values(archetype.bonusSkills).join(', ')}
-                      </Typography>
-                    </CardContent>
-                  </ArchetypeCard>
-                </Grid>
-              ))}
-            </Grid>
-          </AccordionDetails>
-        </Accordion>
-      ))}
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h6" gutterBottom>
-          Selected Archetypes
-        </Typography>
-        {selectedArchetypes.map(archetypeId => {
-          const archetype = availableArchetypes?.find(a => a.id === archetypeId);
+      <Grid container spacing={3}>
+        {Object.entries(archetypeGroups).map(([suit, archetypes]) => {
+          const selectedArchetype = selectedArchetypes.find(a => a.suit === suit);
           return (
-            <Typography key={archetypeId} variant="body2" sx={{ mb: 1 }}>
-              {archetype?.name} ({archetype?.faction})
-            </Typography>
+            <Grid item xs={12} sm={6} md={4} key={suit}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    {suit}
+                  </Typography>
+                  <FormControl fullWidth>
+                    <InputLabel>Archetype</InputLabel>
+                    <Select
+                      value={selectedArchetype?.name || ''}
+                      onChange={(e) => handleArchetypeChange(suit, Object.values(ARCHETYPES).find(a => a.name === e.target.value))}
+                      label="Archetype"
+                    >
+                      {archetypes.map((archetype) => (
+                        <MenuItem key={archetype.name} value={archetype.name}>
+                          {archetype.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  {selectedArchetype && (
+                    <>
+                      <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                        Skills
+                      </Typography>
+                      {selectedArchetype.skills?.map((skill) => (
+                        <FormControlLabel
+                          key={skill}
+                          control={
+                            <Checkbox
+                              checked={selectedSkills[suit]?.[skill] || false}
+                              onChange={(e) => handleSkillChange(suit, skill, e.target.checked)}
+                            />
+                          }
+                          label={skill}
+                        />
+                      ))}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
           );
         })}
-      </Box>
+      </Grid>
     </Box>
   );
 };

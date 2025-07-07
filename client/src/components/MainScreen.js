@@ -1,109 +1,69 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
-  Grid,
-  Paper,
   Typography,
-  Button,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
+  AppBar,
+  Toolbar,
+  Tabs,
+  Tab,
+  Link,
+  Menu,
+  MenuItem,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import EditIcon from '@mui/icons-material/Edit';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import { getCharactersByPlayerCount } from '../data/gameData';
-
-const SUIT_CATEGORIES = [
-  { id: '4', label: '4 Suits' },
-  { id: '2', label: '2 Suits' },
-  { id: '1', label: '1 Suit' },
-];
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const MainScreen = () => {
   const navigate = useNavigate();
-  const [characters, setCharacters] = useState({});
+  const location = useLocation();
+  const [anchorEl, setAnchorEl] = React.useState(null);
 
-  useEffect(() => {
-    // Fetch characters from backend
-    const fetchCharacters = async () => {
-      try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/characters`);
-        const data = await response.json();
-        setCharacters(data);
-      } catch (error) {
-        console.error('Error fetching characters:', error);
-      }
-    };
-    fetchCharacters();
-  }, []);
-
-  const handleCreateCharacter = (suitCount) => {
-    navigate(`/create/${suitCount}`);
+  const handleGameMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
   };
 
-  const handleResumeCharacter = (characterId) => {
-    navigate(`/sheet/${characterId}`);
+  const handleGameMenuClose = () => {
+    setAnchorEl(null);
   };
 
-  const handleEditCharacter = (characterId) => {
-    navigate(`/edit/${characterId}`);
+  const handleCharacterSelect = () => {
+    handleGameMenuClose();
+    navigate('/characters');
   };
 
   return (
-    <Box p={3}>
-      <Grid container spacing={3}>
-        {SUIT_CATEGORIES.map((category) => (
-          <Grid item xs={12} sm={4} key={category.id}>
-            <Paper elevation={3} sx={{ p: 2, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                {category.label}
-              </Typography>
-              
-              <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
-                <Button
-                  variant="contained"
-                  onClick={() => handleCreateCharacter(category.id)}
-                  sx={{ ml: -1 }}
-                >
-                  Create Character
-                </Button>
-              </Box>
-
-              <List>
-                {characters[category.id]?.map((character) => (
-                  <ListItem
-                    key={character.id}
-                    secondaryAction={
-                      <>
-                        <IconButton
-                          edge="end"
-                          onClick={() => handleEditCharacter(character.id)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          edge="end"
-                          onClick={() => handleResumeCharacter(character.id)}
-                        >
-                          <PlayArrowIcon />
-                        </IconButton>
-                      </>
-                    }
-                  >
-                    <ListItemText
-                      primary={character.name}
-                      secondary={character.archetypes.join(', ')}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
+    <Box>
+      <AppBar position="static">
+        <Toolbar>
+          <Tabs value={location.pathname}>
+            <Tab component={Link} to={'/'} label="Main" sx={{ color: 'text.primary' }} />
+            <Tab component={Link} to="/books" label="Books" sx={{ color: 'text.primary' }} />
+            <Tab
+              aria-controls="game-menu"
+              aria-haspopup="true"
+              onClick={handleGameMenuOpen}
+              label="Game"
+              sx={{ color: 'text.primary' }}
+            />
+            <Tab component={Link} to="/about" label="About Us" sx={{ color: 'text.primary' }} />
+          </Tabs>
+          <Menu
+            id="game-menu"
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleGameMenuClose}
+            MenuListProps={{
+              'aria-labelledby': 'game-button',
+            }}
+          >
+            <MenuItem onClick={handleCharacterSelect}>Character Select</MenuItem>
+          </Menu>
+        </Toolbar>
+      </AppBar>
+      <Box sx={{ p: 3, mt: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          Work in Progress
+        </Typography>
+      </Box>
     </Box>
   );
 };

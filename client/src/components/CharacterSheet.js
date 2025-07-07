@@ -1,15 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Box, 
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getCharacterBySlot, removeCharacterBySlot } from '../utils/characterStorage';
+import {
+  Box,
   Button,
   Card,
   CardContent,
-  TextField,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Grid,
   CircularProgress,
   Alert,
@@ -17,336 +14,207 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  IconButton,
-  Checkbox,
-  FormControlLabel,
-  Paper
+  Chip,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { io } from 'socket.io-client';
-import './CharacterSheet.css';
-import SkillSelection from './SkillSelection';
-import ArchetypeSelection from './ArchetypeSelection';
-import FactionDisplay from './FactionDisplay';
-import { 
-  SUITS, 
-  ARCHETYPES, 
-  MAX_ATTRIBUTE_POINTS
-} from '../data/gameData';
 
 const CharacterSheet = () => {
   const navigate = useNavigate();
-  const socketRef = useRef(null);
-  const [characters, setCharacters] = useState([]);
-  const [selectedCharacter, setSelectedCharacter] = useState(null);
-  const [playerCount, setPlayerCount] = useState('4');
-  const [name, setName] = useState('');
-  const [race, setRace] = useState('');
-  const [selectedSuitRoles, setSelectedSuitRoles] = useState([]);
-  const [selectedArchetypes, setSelectedArchetypes] = useState([]);
-  const [skillPoints, setSkillPoints] = useState(0);
-  const [genericSkills, setGenericSkills] = useState({});
-  const [suitSkills, setSuitSkills] = useState({});
-  const [loading, setLoading] = useState(false);
+  const { slot } = useParams();
+  const [character, setCharacter] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteCharacterId, setDeleteCharacterId] = useState(null);
-  const [selectedSuit, setSelectedSuit] = useState(null);
-  const [selectedFaction, setSelectedFaction] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [selectedAttribute, setSelectedAttribute] = useState(null);
 
   useEffect(() => {
-    const socket = io(process.env.REACT_APP_API_URL);
-    socketRef.current = socket;
-
-    socket.on('connect', () => {
-      console.log('Connected to server');
-    });
-
-    socket.on('characterCreated', (character) => {
-      setCharacters(prev => [...prev, character]);
-      setLoading(false);
-      setSuccessMessage('Character created successfully!');
-    });
-
-    socket.on('characterUpdated', (character) => {
-      setCharacters(prev => prev.map(c => c.id === character.id ? character : c));
-      setLoading(false);
-      setSuccessMessage('Character updated successfully!');
-    });
-
-    socket.on('characterDeleted', (id) => {
-      setCharacters(prev => prev.filter(c => c.id !== id));
-      setLoading(false);
-      setSuccessMessage('Character deleted successfully!');
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    fetchCharacters();
-  }, []);
-
-  const fetchCharacters = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/characters`);
-      const data = await response.json();
-      setCharacters(data);
-    } catch (error) {
-      console.error('Error fetching characters:', error);
-    }
-  };
-
-  const getAvailableArchetypes = () => {
-    return getAvailableArchetypes(selectedSuitRoles);
-  };
-
-  const handleCreateCharacter = async () => {
-    if (!name || !race || !playerCount) {
-      setError('Please fill in all required fields');
-      return;
-    }
-
-    // Validate archetype selection
-    const availableArchetypes = getAvailableArchetypes(selectedSuitRoles);
-    if (selectedArchetypes.length !== availableArchetypes.length) {
-      setError(`Please select ${availableArchetypes.length} archetypes`);
-      return;
-    }
-
     setLoading(true);
-    setError('');
-    setSuccessMessage('');
-
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/characters`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name,
-          race,
-          suitRoles: selectedSuitRoles,
-          archetypes: selectedArchetypes,
-          skillPoints,
-          genericSkills,
-          suitSkills
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create character');
+      const characterData = getCharacterBySlot(slot);
+      if (characterData) {
+        setCharacter(characterData);
+      } else {
+        setError(`Character not found in slot ${slot}.`);
       }
-
-      setName('');
-      setRace('');
-      setSelectedSuitRoles([]);
-      setSelectedArchetypes([]);
-      setSkillPoints(0);
-      setGenericSkills({});
-      setSuitSkills({});
-      setSelectedSuit(null);
-      setSelectedFaction(null);
-    } catch (error) {
-      setError(error.message);
+    } catch (e) {
+      setError('Failed to load character data from storage.');
+      console.error(e);
+    } finally {
       setLoading(false);
     }
-  };
-
-  // Handle point spending
-  const handleSpendPoints = async () => {
-    if (!selectedCharacter || !selectedAttribute) {
-      setError('Please select an attribute to spend points on');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError('');
-    setSuccessMessage('');
-
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/characters/${selectedCharacter.id}/points`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          attribute: selectedAttribute,
-          points: 1
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to spend points');
-      }
-
-      const updatedCharacter = await response.json();
-      setSelectedCharacter(updatedCharacter);
-      setSuccessMessage('Points spent successfully');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleBack = () => {
-    navigate('/');
-  };
+  }, [slot]);
 
   const handleEdit = () => {
-    navigate(`/edit/${selectedCharacter.id}`);
+    navigate(`/edit/${slot}`);
   };
 
-  const handleDelete = async () => {
+  const handleReturnToSelect = () => {
+    navigate('/characters');
+  };
+
+  const handleDelete = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = () => {
     try {
-      await fetch(`${process.env.REACT_APP_API_URL}/characters/${selectedCharacter.id}`, {
-        method: 'DELETE',
-      });
-      socketRef.current.emit('characterDeleted', selectedCharacter.id);
+      removeCharacterBySlot(slot);
       navigate('/');
-    } catch (error) {
-      console.error('Error deleting character:', error);
+    } catch (e) {
+      setError('Failed to delete character.');
+      console.error(e);
+    } finally {
+      setShowDeleteDialog(false);
     }
   };
 
-  if (!selectedCharacter) {
-    return <Box>Loading...</Box>;
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">{error}</Alert>
+        <Button variant="outlined" onClick={handleReturnToSelect} sx={{ mt: 2 }}>
+          Return to Character Select
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!character) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="warning">No character data available for this slot.</Alert>
+        <Button variant="outlined" onClick={handleReturnToSelect} sx={{ mt: 2 }}>
+          Return to Character Select
+        </Button>
+      </Box>
+    );
   }
 
   return (
-    <Box p={3}>
-      <Paper elevation={3} sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-          <Typography variant="h4">
-            Character Sheet
-          </Typography>
-          <Box>
-            <Button
-              variant="text"
-              onClick={handleBack}
-              sx={{ mr: 2 }}
-            >
-              Back to Main Menu
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleEdit}
-              sx={{ mr: 2 }}
-            >
-              Edit Character
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => setDeleteConfirmOpen(true)}
-            >
-              Delete Character
-            </Button>
-          </Box>
-        </Box>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        Character Sheet
+      </Typography>
 
-        <Grid container spacing={3}>
-          {/* Character Info */}
-          <Grid item xs={12} sm={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Character Info
-                </Typography>
-                <Typography>Name: {selectedCharacter.name}</Typography>
-                <Typography>Suit Roles: {selectedCharacter.suitRoles.join(', ')}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <Button variant="contained" color="primary" onClick={handleEdit}>
+          Edit Character
+        </Button>
+        <Button variant="outlined" onClick={handleReturnToSelect}>
+          Return to Character Select
+        </Button>
+        <Button variant="outlined" color="error" onClick={handleDelete}>
+          Delete Character
+        </Button>
+      </Box>
 
-          {/* Archetypes */}
-          <Grid item xs={12} sm={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Archetypes
-                </Typography>
-                {selectedCharacter.archetypes.map((archetypeId) => (
-                  <Typography key={archetypeId}>
-                    {ARCHETYPES[archetypeId].name}
-                  </Typography>
-                ))}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Attributes */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Attributes
-                </Typography>
-                <Grid container spacing={2}>
-                  {Object.entries(selectedCharacter.attributes).map(([attr, value]) => (
-                    <Grid item xs={6} sm={3} key={attr}>
-                      <Typography>
-                        {attr}: {value}
-                      </Typography>
-                    </Grid>
-                  ))}
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Skills */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Skills
-                </Typography>
-                {selectedCharacter.skills.map((skill) => (
-                  <Typography key={skill}>{skill}</Typography>
-                ))}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Factions */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Factions
-                </Typography>
-                <FactionDisplay archetypes={selectedCharacter.archetypes} />
-              </CardContent>
-            </Card>
-          </Grid>
+      <Grid container spacing={3}>
+        {/* Basic Info */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ p: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Basic Information</Typography>
+              <Typography variant="body1">Name: {character.name || 'N/A'}</Typography>
+              <Typography variant="body1">Race: {character.race || 'N/A'}</Typography>
+              <Typography variant="body1">Level: {character.level || 1}</Typography>
+              <Typography variant="body1">Background: {character.background || 'N/A'}</Typography>
+              <Typography variant="body1">Appearance: {character.appearance || 'N/A'}</Typography>
+              <Typography variant="body1">Personality: {character.personality || 'N/A'}</Typography>
+              <Typography variant="body1">Backstory: {character.backstory || 'N/A'}</Typography>
+            </CardContent>
+          </Card>
         </Grid>
-      </Paper>
 
-      <Dialog
-        open={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-      >
-        <DialogTitle>Delete Character</DialogTitle>
+        {/* Attributes */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ p: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Attributes</Typography>
+              {character.attributes && Object.entries(character.attributes).map(([attr, value]) => (
+                <Typography key={attr} variant="body1">
+                  {attr.charAt(0).toUpperCase() + attr.slice(1)}: {value}
+                </Typography>
+              ))}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Suits and Archetypes */}
+        <Grid item xs={12}>
+          <Card sx={{ p: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Suits and Archetypes</Typography>
+              <Box mb={2}>
+                <Typography variant="subtitle1" gutterBottom>Suit Roles</Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {character.suitRolesSelected && character.suitRolesSelected.map((suit) => (
+                    <Chip key={suit} label={suit.charAt(0).toUpperCase() + suit.slice(1)} />
+                  ))}
+                </Box>
+              </Box>
+              <Box>
+                <Typography variant="subtitle1" gutterBottom>Archetypes</Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {character.archetypes && character.archetypes.map((archetype, index) => (
+                    <Chip key={index} label={archetype.name || 'Unknown'} />
+                  ))}
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Skills */}
+        <Grid item xs={12}>
+          <Card sx={{ p: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Skills</Typography>
+              <Grid container spacing={1}>
+                {character.skills && Object.entries(character.skills).map(([suit, skillSet]) =>
+                  Object.entries(skillSet).map(([skill, checked]) =>
+                    checked ? (
+                      <Grid item xs={12} sm={6} md={4} key={`${suit}-${skill}`}>
+                        <Typography variant="body1">{skill}</Typography>
+                      </Grid>
+                    ) : null
+                  )
+                )}
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Items */}
+        <Grid item xs={12}>
+          <Card sx={{ p: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Items</Typography>
+              {character.items && character.items.map((item, index) => (
+                <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body1">{item.name}</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{item.quantity}</Typography>
+                </Box>
+              ))}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onClose={() => setShowDeleteDialog(false)}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
-          <Typography>
-            Are you sure you want to delete this character? This action cannot be undone.
-          </Typography>
+          <Typography>Are you sure you want to delete this character? This action cannot be undone.</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error">
-            Delete
-          </Button>
+          <Button onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+          <Button onClick={handleConfirmDelete} color="error">Delete</Button>
         </DialogActions>
       </Dialog>
     </Box>

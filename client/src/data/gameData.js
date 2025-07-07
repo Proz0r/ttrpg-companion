@@ -303,6 +303,21 @@ export const ARCHETYPES = {
   }
 };
 
+export const ITEMS = {
+  healingPotion: {
+    name: 'Healing Potion',
+    description: 'Restores health when consumed'
+  },
+  explorationGear: {
+    name: 'Exploration Gear',
+    description: 'Basic gear for exploration'
+  },
+  weapon: {
+    name: 'Weapon',
+    description: 'A versatile weapon for combat'
+  }
+};
+
 export const FACTIONS = {
   'Countrymen': {
     id: 'countrymen',
@@ -458,15 +473,15 @@ export const SKILL_POINTS_PER_ATTRIBUTE = 1;
 
 // Helper functions
 export const getAvailableArchetypes = (suitRoles) => {
-  // Convert suit roles to object format if it's an array
-  const suitRolesObj = Array.isArray(suitRoles) 
-    ? suitRoles.reduce((acc, suit) => ({ ...acc, [suit]: true }), {})
-    : suitRoles;
+  // Convert suit roles to array format if it's an object
+  const suitRolesArray = Array.isArray(suitRoles) 
+    ? suitRoles
+    : Object.keys(suitRoles || {});
 
-  // Filter archetypes based on selected suits
-  return Object.values(ARCHETYPES).filter(archetype => 
-    suitRolesObj && Object.keys(suitRolesObj).includes(archetype.suit)
-  );
+  // Return archetype IDs based on selected suits
+  return Object.values(ARCHETYPES)
+    .filter(archetype => suitRolesArray.includes(archetype.suit))
+    .map(archetype => archetype.id);
 };
 
 export const getAvailableSkills = (suit) => {
